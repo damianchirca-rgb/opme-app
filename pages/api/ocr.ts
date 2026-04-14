@@ -20,30 +20,29 @@ export default async function handler(
       return res.status(400).json({ error: 'Missing image data' })
     }
 
-    // Remove data URL prefix if present
     const base64Data = imageBase64.split(',')[1] || imageBase64
 
     const response = await openai.chat.completions.create({
-  model: 'gpt-4-turbo-vision',
-  messages: [
-    {
-      role: 'user',
-      content: [
+      model: 'gpt-4-turbo',
+      messages: [
         {
-          type: 'image_url',
-          image_url: {
-            url: `data:image/jpeg;base64,${base64Data}`,
-          },
-        },
-        {
-          type: 'text',
-          text: 'Extrage din această factură: beneficiar, CIF, IBAN, suma, data. JSON: {beneficiary_name, beneficiary_cif, beneficiary_iban, amount, date}',
+          role: 'user',
+          content: [
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:image/jpeg;base64,${base64Data}`,
+              },
+            },
+            {
+              type: 'text',
+              text: 'Extrage din această factură: beneficiar (nume), CIF, IBAN, suma în RON, data. Răspunde DOAR în JSON: {"beneficiary_name":"...","beneficiary_cif":"...","beneficiary_iban":"...","amount":0,"date":"..."}',
+            },
+          ],
         },
       ],
-    },
-  ],
-  max_tokens: 1024,
-})
+      max_tokens: 1024,
+    })
 
     const content = response.choices[0].message.content
     const jsonMatch = content?.match(/\{[\s\S]*\}/)
@@ -52,10 +51,10 @@ export default async function handler(
     res.status(200).json({
       success: true,
       data: extractedData,
-      provider: 'openai-vision',
+      provider: 'openai-gpt4-turbo',
     })
   } catch (error) {
     console.error('OCR error:', error)
-    res.status(500).json({ error: 'OCR failed' })
+    res.status(500).json({ error: 'OCR failed', details: String(error) })
   }
 }
