@@ -23,27 +23,27 @@ export default async function handler(
     // Remove data URL prefix if present
     const base64Data = imageBase64.split(',')[1] || imageBase64
 
-    const response = await openai.vision.create({
-      model: 'gpt-4-vision-preview',
-      messages: [
+    const response = await openai.chat.completions.create({
+  model: 'gpt-4-turbo-vision',
+  messages: [
+    {
+      role: 'user',
+      content: [
         {
-          role: 'user',
-          content: [
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:image/jpeg;base64,${base64Data}`,
-              },
-            },
-            {
-              type: 'text',
-              text: 'Extrage din această factură: beneficiar (nume), CIF, IBAN, suma în RON, data. Răspunde în format JSON: {beneficiary_name, beneficiary_cif, beneficiary_iban, amount, date}',
-            },
-          ],
+          type: 'image_url',
+          image_url: {
+            url: `data:image/jpeg;base64,${base64Data}`,
+          },
+        },
+        {
+          type: 'text',
+          text: 'Extrage din această factură: beneficiar, CIF, IBAN, suma, data. JSON: {beneficiary_name, beneficiary_cif, beneficiary_iban, amount, date}',
         },
       ],
-      max_tokens: 1024,
-    })
+    },
+  ],
+  max_tokens: 1024,
+})
 
     const content = response.choices[0].message.content
     const jsonMatch = content?.match(/\{[\s\S]*\}/)
